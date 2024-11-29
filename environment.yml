@@ -1,0 +1,12 @@
+# Logiciels requis pour exécuter la démo
+name: sage-triangular
+
+channels:
+- conda-forge
+
+dependencies:
+- sage=10.4
+- jupyterlab
+
+
+

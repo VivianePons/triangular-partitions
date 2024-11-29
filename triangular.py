@@ -503,6 +503,34 @@ class TriangularPartition(Element,
             q = K.gen()
         return qAreaEnumerator(self, q)
 
+
+    def Aqt(self, gens = None, tableau = None):
+        r"""
+        EXAMPLES::
+
+            sage: TriangularPartition([4,3,1]).Aqt()
+            q^8 + q^7*t + q^6*t^2 + q^5*t^3 + q^4*t^4 + q^3*t^5 + q^2*t^6 + q*t^7 + t^8 + q^6*t + q^5*t^2 + q^4*t^3 + q^3*t^4 + q^2*t^5 + q*t^6 + q^5*t + 2*q^4*t^2 + 2*q^3*t^3 + 2*q^2*t^4 + q*t^5
+        """
+        if gens is None:
+            K = PolynomialRing(QQ,"q,t")
+            gens = K.gens()
+        q,t = gens
+        return sum(q**tdp.area() * t**tdp.sim(tableau) for tdp in self.triangular_dyck_paths())
+
+    def Aqt_schur2parts(self):
+        r"""
+        EXAMPLES::
+
+            sage: tp = TriangularPartition([3,2])
+            sage: tp.Aqt_schur2parts()
+            s[3, 1] + s[5]
+        """
+        pol = self.Aqt()
+        q,t = pol.parent().gens()
+        Sym = SymmetricFunctions(QQ)
+        Schur = Sym.Schur()
+        return sum(coeff * Schur(p) for p,coeff in list(Schur.from_polynomial(pol)) if p.length() <= 2)
+
     def parking_symmetric_enumeration(self):
         r"""
         EXAMPLES::
@@ -557,7 +585,7 @@ class TriangularPartition(Element,
     def triangular_schur_poset(self):
         return Poset({k:list(k.triangular_schur_up()) for k in self.triangular_dyck_paths()})
 
-    def area_sim_distribution(self):
+    def area_sim_distribution(self, tableau = None):
         r"""
         EXAMPLES::
 
@@ -566,9 +594,12 @@ class TriangularPartition(Element,
         """
         d = {}
         for dp in self.triangular_dyck_paths():
-            q,t = dp.area(), dp.sim()
+            q,t = dp.area(), dp.sim(tableau)
             d[(q,t)] = d.get((q,t),0)+1
         return d
+
+    def top_down_area_sim_distribution(self):
+        return self.area_sim_distribution(tableau = self.top_down_standard_tableau())
 
     def path_distance_sim_distribution_intervals(self):
         r"""
@@ -741,11 +772,11 @@ class TriangularPartition(Element,
         return SkewPartition([self.partition(),d.partition()]).cells()[0]
 
     @cached_method
-    def similar_standard_labels(self):
+    def triangular_standard_labels(self):
         r"""
         EXAMPLES::
 
-            sage: TriangularPartition([3,1]).similar_standard_labels() == {(0, 2): 4, (1, 0): 3, (0, 1): 2, (0, 0): 1}
+            sage: TriangularPartition([3,1]).triangular_standard_labels() == {(0, 2): 4, (1, 0): 3, (0, 1): 2, (0, 0): 1}
             True
         """
         labels = {}
@@ -757,16 +788,16 @@ class TriangularPartition(Element,
         return labels
 
         # mu = self.natural_down()
-        # labels = dict(mu.similar_standard_labels())
+        # labels = dict(mu.triangular_standard_labels())
         # labels[self.natural_corner()] = self.size()
         # return labels
 
     @cached_method
-    def PRV_standard_labels(self):
+    def top_down_standard_labels(self):
         r"""
         EXAMPLES::
 
-            sage: TriangularPartition([3,1]).PRV_standard_labels() == {(1, 0): 4, (0, 2): 3, (0, 1): 2, (0, 0): 1}
+            sage: TriangularPartition([3,1]).top_down_standard_labels() == {(1, 0): 4, (0, 2): 3, (0, 1): 2, (0, 0): 1}
             True
         """
         labels = {}
@@ -783,42 +814,53 @@ class TriangularPartition(Element,
         return labels
 
     @cached_method
-    def PRV_standard_tableau(self):
+    def top_down_standard_tableau(self):
         r"""
         EXAMPLES::
 
-            sage: TriangularPartition([3,1]).PRV_standard_tableau()
+            sage: TriangularPartition([3,1]).top_down_standard_tableau()
             [[1, 2, 3], [4]]
         """
         t = [[0] * k for k in self]
-        l = self.PRV_standard_labels()
+        l = self.top_down_standard_labels()
         for i,j in self.cells():
             t[i][j] = l[(i,j)]
         return Tableau(t)
 
     @cached_method
-    def similar_standard_tableau(self):
+    def triangular_standard_tableau(self):
         r"""
         EXAMPLES::
 
-            sage: TriangularPartition([3,1]).similar_standard_tableau()
+            sage: TriangularPartition([3,1]).triangular_standard_tableau()
             [[1, 2, 4], [3]]
         """
         t = [[0] * k for k in self]
-        l = self.similar_standard_labels()
+        l = self.triangular_standard_labels()
         for i,j in self.cells():
             t[i][j] = l[(i,j)]
         return Tableau(t)
 
-    def triangular_standard_tableau(self, labels):
+    def standard_tableau(self, labels):
         t = [[0] * k for k in self]
         l = labels
         for i,j in self.cells():
             t[i][j] = l[(i,j)]
         return Tableau(t)
 
+    def is_sim_sym(self, tableau):
+        d_triangular = self.area_sim_distribution()
+        return self.area_sim_distribution(tableau = tableau) == d
+
+    def sim_sym_tableaux(self):
+        d_triangular = self.area_sim_distribution()
+        for t in self.partition().standard_tableaux():
+            d = self.area_sim_distribution(t)
+            if d == d_triangular:
+                yield t
+
     def diagonal_orientation(self):
-        L = self.similar_standard_labels()
+        L = self.triangular_standard_labels()
         s = set(L.values())
         p = self
         orientation = None
@@ -849,7 +891,7 @@ class TriangularPartition(Element,
         return orientation
 
     def is_diagonal_oriented(self):
-        L = self.similar_standard_labels()
+        L = self.triangular_standard_labels()
         s = set(L.values())
         p = self
         while p.size() > 0:
@@ -869,13 +911,13 @@ class TriangularPartition(Element,
     # def is_corner_extremal(self):
         # if self.size() == 0:
             # return True
-        # L = self.similar_standard_labels()
+        # L = self.triangular_standard_labels()
         # max_corner =max(self.corners(), key = lambda x: L[x])
         # C = sorted(self.corners(), key = lambda x: x[0])
         # return max_corner == C[0] or max_corner == C[-1]
 
     def is_unambiguous(self):
-        L = self.similar_standard_labels()
+        L = self.triangular_standard_labels()
         conj = self.conjugate()
         for c in self.cells():
             if c[0] > 0 and c[1] > 0:
@@ -922,7 +964,7 @@ class TriangularPartition(Element,
         for t in self.slope_enumerator(step):
             labels = self.slope_label(t)
             if labels:
-                tab = self.triangular_standard_tableau(labels)
+                tab = self.standard_tableau(labels)
                 if not tab in tableaux:
                     tableaux.add(tab)
                     yield labels
@@ -935,14 +977,14 @@ class TriangularPartition(Element,
             sage: TriangularPartition([3,1]).slope_tableaux()
             {[[1, 2, 3], [4]], [[1, 2, 4], [3]]}
         """
-        return set(self.triangular_standard_tableau(labels) for labels in self.slope_labels(step))
+        return set(self.standard_tableau(labels) for labels in self.slope_labels(step))
 
         return tableaux
 
     def slope_tableau(self, slope):
         labels = self.slope_label(slope)
         if labels:
-            return self.triangular_standard_tableau(labels)
+            return self.standard_tableau(labels)
 
 
     # @cached_method
@@ -1364,7 +1406,7 @@ class TriangularDyckPath(Element,
         latex.add_package_to_preamble_if_available("tikz")
         return self._grid_latex_()
 
-    def _grid_latex_(self, with_deficit = False, labels = None):
+    def _grid_latex_(self, with_deficit = False, tableau = None):
         partition = self.partition()
         path = self.path()
         maxx = max(partition)
@@ -1396,17 +1438,16 @@ class TriangularDyckPath(Element,
         s+= f"\\draw[ultra thick, fill = red!30] " + path1
         s+= f"\\draw[fill = {color}] " + path3
         if with_deficit:
-            for y,x in self.deficit_cells(labels):
+            for y,x in self.deficit_cells(tableau):
                 s+=f"\\draw[fill = yellow!50] ({x},{y}) rectangle ({x+1},{y+1});\n"
-                if labels is None:
-                    s+=f"\\draw[pattern=crosshatch dots, pattern color=gray] ({x},{y}) rectangle ({x+1},{y+1});\n"
-        if labels != None:
-            for y,x in labels:
+                s+=f"\\draw[pattern=crosshatch dots, pattern color=gray!50] ({x},{y}) rectangle ({x+1},{y+1});\n"
+        if tableau != None:
+            for y,x in tableau.cells():
                 s+= f"\\node at ({x + .5}, {y +.5}) (int) "
                 s+= "{"
-                s+= f"${labels[(y,x)]}$"
+                s+= f"${tableau[y][x]}$"
                 s+= "};\n"
-        s+= f"\\draw[ultra thick, red] " + path2
+        s+= f"\\draw[line width = 5px, red] " + path2
         s+= f"\\draw[step=1cm,gray,very thin] (0,0) grid ({maxx},{maxy});\n"
         s+= "\\end{tikzpicture}"
         return s
@@ -1432,7 +1473,7 @@ class TriangularDyckPath(Element,
         """
         return self._skewpart.size()
 
-    def sim(self):
+    def sim(self, tableau = None):
         r"""
         EXAMPLES::
 
@@ -1441,9 +1482,9 @@ class TriangularDyckPath(Element,
             sage: TriangularDyckPath([3,1],[1,1]).sim()
             1
         """
-        return len(list(self.similar_cells()))
+        return len(list(self.similar_cells(tableau)))
 
-    def deficit(self, labels = None):
+    def deficit(self, tableau = None):
         r"""
         EXAMPLES::
 
@@ -1451,10 +1492,10 @@ class TriangularDyckPath(Element,
             sage: tdp = TriangularDyckPath([3,1],[3])
             sage: tdp.deficit()
             1
-            sage: tdp.deficit(labels = tp.PRV_standard_labels())
+            sage: tdp.deficit(tableau = tp.top_down_standard_tableau())
             0
         """
-        return len(list(self.deficit_cells(labels)))
+        return len(list(self.deficit_cells(tableau)))
 
     def compose(self, cell, other):
         y, x = cell
@@ -1508,7 +1549,7 @@ class TriangularDyckPath(Element,
         if j > 0 and self.is_horizontal_deficit(i,j-1):
             return self.conjugate().immediate_deficit_tamari_rotate(j,i).conjugate()
         p = list(self.path())
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         orig = L[(i,j)]
         v = L[(i,j)]
         p[i]-=1
@@ -1523,7 +1564,7 @@ class TriangularDyckPath(Element,
         if any(self.is_significant_horizontal_deficit(i,j2) for j2 in range(j)):
             return self.conjugate().triangular_tamari_rotate(j,i).conjugate()
 
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         pinit = list(self.path())
         p = list(self.path())
         p[i]-=1
@@ -1558,7 +1599,7 @@ class TriangularDyckPath(Element,
     @cached_method
     def triangular_tamari_removable_cells(self):
         if self.path().size() > 0:
-            L = self.partition().similar_standard_labels()
+            L = self.partition().triangular_standard_labels()
             cell = max(self.corners(), key = lambda c:L[c])
             s = self.triangular_tamari_rotate(*cell).triangular_tamari_removable_cells()
             s.add(cell)
@@ -1574,7 +1615,7 @@ class TriangularDyckPath(Element,
     def triangular_tamari_minus_cells(self):
         s = set()
         rcells = self.triangular_tamari_removable_cells()
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         path = self.path()
         conj = self.path().conjugate()
         for i,j in self.skew_partition().cells():
@@ -1595,7 +1636,7 @@ class TriangularDyckPath(Element,
         # ~ if j > 0 and self.is_horizontal_deficit(i,j-1):
             # ~ return self.conjugate().triangular_tamari_rotate(j,i).conjugate()
         # ~ p = list(self.path())
-        # ~ L = self.partition().similar_standard_labels()
+        # ~ L = self.partition().triangular_standard_labels()
         # ~ v = L[(i,j)]
         # ~ p[i]-=1
         # ~ i-=1
@@ -1609,7 +1650,7 @@ class TriangularDyckPath(Element,
         # if j > 0 and self.is_horizontal_deficit(i,j-1):
             # return self.conjugate().triangular_tamari_rotate(j,i).conjugate()
         # p = list(self.path())
-        # L = self.partition().similar_standard_labels()
+        # L = self.partition().triangular_standard_labels()
         # orig = L[(i,j)]
         # v = orig
         # p[i]-=1
@@ -1636,7 +1677,7 @@ class TriangularDyckPath(Element,
             yield self.slope_tamari_rotate(l,c)
 
     # def triangular_schur_rotate(self,i,j):
-        # L = self.partition().similar_standard_labels()
+        # L = self.partition().triangular_standard_labels()
         # v = L[(i,j)]
         # d = set()
         # d.update((i,j2) for j2 in range(j) if self.is_horizontal_deficit(i,j2))
@@ -1664,7 +1705,7 @@ class TriangularDyckPath(Element,
         # return tdp
 
     def triangular_schur_rotate(self,i,j):
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         v = L[(i,j)]
         d = set()
         d.update((i,j2) for j2 in range(j) if self.is_horizontal_deficit(i,j2))
@@ -1726,7 +1767,7 @@ class TriangularDyckPath(Element,
         """
         return (self.cell_min_slope(i,j) + self.cell_max_slope(i,j))/2
 
-    def is_sim_cell(self,i,j):
+    def is_sim_cell(self,i,j, tableau = None):
         r"""
         EXAMPLES::
 
@@ -1737,28 +1778,31 @@ class TriangularDyckPath(Element,
             sage: tdp.is_sim_cell(0,0)
             False
         """
-        tau = self.partition()
-        return self.cell_min_slope(i,j) < tau.mean_slope() and tau.mean_slope() <= self.cell_max_slope(i,j)
+        if tableau is None:
+            tau = self.partition()
+            return self.cell_min_slope(i,j) < tau.mean_slope() and tau.mean_slope() <= self.cell_max_slope(i,j)
+        else:
+            return not self.is_deficit_cell(i,j,tableau)
 
-    def is_deficit_cell(self,i,j, labels = None):
+    def is_deficit_cell(self,i,j, tableau = None):
         r"""
         EXAMPLES::
 
             sage: tdp = TriangularDyckPath([3,1],[3])
             sage: tdp.is_deficit_cell(0,0)
             True
-            sage: tdp.is_deficit_cell(0,0, labels = tdp.partition().PRV_standard_labels())
+            sage: tdp.is_deficit_cell(0,0, tableau = tdp.partition().top_down_standard_tableau())
             False
         """
         col_ext = [c for c in self.skew_partition().cells() if c[1] == j]
         row_ext = [c for c in self.skew_partition().cells() if c[0] == i]
         col_int = [c for c in self.path().cells() if c[1] == j]
         row_int = [c for c in self.path().cells() if c[0] == i]
-        if labels is None:
-            L = self.partition().similar_standard_labels()
+        if tableau is None:
+            L = self.partition().triangular_standard_tableau()
         else:
-            L = labels
-        return any(L[c1] < L[c2] for c1 in col_ext for c2 in row_int) or any(L[c1] < L[c2] for c1 in row_ext for c2 in col_int)
+            L = tableau
+        return any(L.entry(c1) < L.entry(c2) for c1 in col_ext for c2 in row_int) or any(L.entry(c1) < L.entry(c2) for c1 in row_ext for c2 in col_int)
 
     # def is_vertical_lead_deficit(self,i,j):
         # return self.is_vertical_deficit(i,j) and all(not self.is_vertical_deficit(i,j2) for j2 in range(j+1,self.path()[i]))
@@ -1775,7 +1819,7 @@ class TriangularDyckPath(Element,
         if len(arm) == 0:
             return False
         corner = arm[-1]
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         return any(L[c] < L[corner] for c in leg)
 
     def is_vertical_deficit(self,i,j):
@@ -1784,7 +1828,7 @@ class TriangularDyckPath(Element,
         if len(leg) == 0:
             return False
         corner = leg[-1]
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         return any(L[c] < L[corner] for c in arm)
 
     def is_significant_horizontal_deficit(self,i,j):
@@ -1793,7 +1837,7 @@ class TriangularDyckPath(Element,
         if len(arm) == 0:
             return False
         corner = arm[-1]
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         for c in leg:
             if L[c] < L[corner]:
                 for c2 in self.partition().horizontal_rectangle_cells(c,corner):
@@ -1811,7 +1855,7 @@ class TriangularDyckPath(Element,
         if len(leg) == 0:
             return False
         corner = leg[-1]
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         for c in arm:
             if L[c] < L[corner]:
                 for c2 in self.partition().vertical_rectangle_cells(corner,c):
@@ -1824,13 +1868,13 @@ class TriangularDyckPath(Element,
         return False
 
     def path_labels(self):
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         return set(L[c] for c in self.skew_partition().cells())
 
     def is_label_in_path(self,v):
         return v in self.path_labels()
 
-    def similar_cells(self):
+    def similar_cells(self, tableau = None):
         r"""
         EXAMPLES::
 
@@ -1839,21 +1883,21 @@ class TriangularDyckPath(Element,
             [(0, 1), (0, 2)]
         """
         for i,j in self._path.cells():
-            if self.is_sim_cell(i,j):
+            if self.is_sim_cell(i,j, tableau):
                 yield (i,j)
 
-    def deficit_cells(self, labels = None):
+    def deficit_cells(self, tableau = None):
         r"""
         EXAMPLES::
 
             sage: tdp = TriangularDyckPath([3,1],[3])
             sage: list(tdp.deficit_cells())
             [(0, 0)]
-            sage: list(tdp.deficit_cells(labels = tdp.partition().PRV_standard_labels()))
+            sage: list(tdp.deficit_cells(tableau = tdp.partition().top_down_standard_tableau()))
             []
         """
         for i,j in self._path.cells():
-            if self.is_deficit_cell(i,j, labels):
+            if self.is_deficit_cell(i,j, tableau):
                 yield (i,j)
 
     # def lead_deficit_cells(self):
@@ -1938,7 +1982,7 @@ class TriangularDyckPath(Element,
         return Partition(reversed(sorted(self.descents_composition())))
 
     def cells_RSK(self):
-        L = self.partition().similar_standard_labels()
+        L = self.partition().triangular_standard_labels()
         word1 = self.skew_partition().cells()
         word1.sort(key = lambda x: -L[x])
         word2 = [c for c in self.path().cells() if not self.is_deficit_cell(*c)]

@@ -191,7 +191,7 @@ def schur_poset_polynomial(P, q, t, r):
 
 # tested up to size 20
 def test_corners_maximal(tr):
-    L = tr.similar_standard_labels()
+    L = tr.triangular_standard_labels()
     corners = set(tr.corners())
     not_corners = set(c for c in tr.cells() if not c in corners)
     return all(L[c1] < L[c2] for c1 in not_corners for c2 in corners)
@@ -284,11 +284,11 @@ def test_2_lines_path_tamari(n):
     return True
 
 
-## PRV Labels
+## top down Labels
 
-def PRV_q_t_distribution(tr, labels = None):
-    if labels is None:
-        labels = tr.PRV_standard_labels()
+def top_down_q_t_distribution(tr):
+    if tableau is None:
+        labels = tr.top_down_standard_labels()
     d = {}
     for dp in tr.triangular_dyck_paths():
         area = dp.area()
@@ -298,7 +298,7 @@ def PRV_q_t_distribution(tr, labels = None):
 
 def PRV_poset_distribution(tr, P, tableau = None):
     if tableau is None:
-        tableau = tr.PRV_standard_tableau()
+        tableau = tr.top_down_standard_tableau()
     labels = {c: tableau.entry(c) for c in tr.cells()}
     d = {}
     for dp1, dp2 in P.relations():
@@ -310,14 +310,14 @@ def PRV_poset_distribution(tr, P, tableau = None):
 def symmetric_labelings(tr):
     for t in tr.partition().standard_tableaux():
         labels = {c: t.entry(c) for c in tr.cells()}
-        d = PRV_q_t_distribution(tr,labels)
+        d = tr.area_sim_distribution(t)
         if test_symmetry_distribution(d):
             yield t
 
 # tested 3 .. 21
 def test_both_symmetry(n):
     for tr in TriangularPartitions(n):
-        d = PRV_q_t_distribution(tr)
+        d = tr.top_down_area_sim_distribution()
         if test_symmetry_distribution(d):
             print(tr)
             P = tr.path_tamari_lattice()
