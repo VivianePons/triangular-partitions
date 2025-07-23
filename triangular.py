@@ -531,6 +531,16 @@ class TriangularPartition(Element,
         Schur = Sym.Schur()
         return sum(coeff * Schur(p) for p,coeff in list(Schur.from_polynomial(pol)) if p.length() <= 2)
 
+    def Aqt_intervals(self, gens = None, tableau = None, poset = None):
+        if poset is None:
+            poset = self.path_tamari_lattice()
+        if gens is None:
+            K = PolynomialRing(QQ,"q,t")
+            gens = K.gens()
+        q,t = gens
+        d = poset_distance_sim_distribution_intervals(poset, tableau)
+        return sum(d[dis,sim] * q**dis*t**sim for dis,sim in d)
+
     def parking_symmetric_enumeration(self):
         r"""
         EXAMPLES::
@@ -601,29 +611,22 @@ class TriangularPartition(Element,
     def top_down_area_sim_distribution(self):
         return self.area_sim_distribution(tableau = self.top_down_standard_tableau())
 
-    def path_distance_sim_distribution_intervals(self):
-        r"""
-        EXAMPLES::
+    def top_down_is_sim_sym(self):
+        return self.is_sim_sym(tableau = self.top_down_standard_tableau())
 
-            sage: TriangularPartition([2]).path_distance_sim_distribution_intervals() == {(0, 2): 1, (1, 1): 1, (2, 0): 1, (0, 1): 1, (1, 0): 1, (0, 0): 1}
-            True
-        """
-        L = self.path_tamari_lattice()
-        d = {}
-        for dp1, dp2 in L.relations():
-            distance = dp1.path_distance(dp2)
-            sim = dp2.sim()
-            d[(distance, sim)] = d.get((distance, sim),0) + 1
-        return d
+
+    def top_down_distance_sim_distribution_intervals(self):
+        P = self.path_tamari_lattice()
+        tab = self.top_down_standard_tableau()
+        return poset_distance_sim_distribution_intervals(P, tab)
+
+
+
 
     def triangular_distance_sim_distribution_intervals(self):
-        L = self.triangular_tamari_poset()
-        d = {}
-        for dp1, dp2 in L.relations():
-            distance = dp1.triangular_distance(dp2)
-            sim = dp2.sim()
-            d[(distance, sim)] = d.get((distance, sim),0) + 1
-        return d
+        P = self.path_tamari_lattice()
+        tab = self.triangular_standard_tableau()
+        return poset_distance_sim_distribution_intervals(P, tab)
 
     def triangular_min_slope(self):
         t = self.global_min_slope()
@@ -850,7 +853,7 @@ class TriangularPartition(Element,
 
     def is_sim_sym(self, tableau):
         d_triangular = self.area_sim_distribution()
-        return self.area_sim_distribution(tableau = tableau) == d
+        return self.area_sim_distribution(tableau = tableau) == d_triangular
 
     def sim_sym_tableaux(self):
         d_triangular = self.area_sim_distribution()
@@ -2165,4 +2168,19 @@ class TriangularDyckPaths_partition(TriangularDyckPaths):
                     for p2 in TriangularDyckPaths(beta):
                         yield TriangularDyckPath(skewalpha[0], p1.path()).compose(cell, p2)
 
+
+def poset_distance(P, dw1, dw2):
+    I = P.subposet(P.interval(dw1, dw2))
+    return max(len(c) for c in I.maximal_chains()) - 1
+
+def poset_distance_sim_distribution_intervals(P, tableau):
+    d = {}
+    for dp1, dp2 in P.relations():
+        distance = poset_distance(P, dp1, dp2)
+        sim = dp2.sim(tableau = tableau)
+        d[(distance, sim)] = d.get((distance, sim),0) + 1
+    return d
+
+def test_symmetry_distribution(d):
+    return all(d.get((y,x),0) == d.get((x,y),0) for x,y in d)
 

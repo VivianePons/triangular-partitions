@@ -286,13 +286,13 @@ def test_2_lines_path_tamari(n):
 
 ## top down Labels
 
-def top_down_q_t_distribution(tr):
+def top_down_q_t_distribution(tr, tableau = None):
     if tableau is None:
-        labels = tr.top_down_standard_labels()
+        tableau = tr.top_down_standard_tableau()
     d = {}
     for dp in tr.triangular_dyck_paths():
         area = dp.area()
-        sim = tr.size() - area - dp.deficit(labels = labels)
+        sim = tr.size() - area - dp.deficit(tableau = tableau)
         d[(area,sim)] = d.get((area,sim),0) + 1
     return d
 
@@ -302,14 +302,13 @@ def PRV_poset_distribution(tr, P, tableau = None):
     labels = {c: tableau.entry(c) for c in tr.cells()}
     d = {}
     for dp1, dp2 in P.relations():
-        sim = tr.size() - dp2.area() - dp2.deficit(labels = labels)
+        sim = tr.size() - dp2.area() - dp2.deficit(tableau = tableau)
         distance = poset_distance(P,dp1,dp2)
         d[(distance,sim)] = d.get((distance,sim),0) + 1
     return d
 
 def symmetric_labelings(tr):
     for t in tr.partition().standard_tableaux():
-        labels = {c: t.entry(c) for c in tr.cells()}
         d = tr.area_sim_distribution(t)
         if test_symmetry_distribution(d):
             yield t
@@ -457,7 +456,7 @@ SCHURS = {
 (11, 1) : schur[10, 1] + schur[12],
 (12,) : schur[12],
 (5, 4, 3, 1) : schur[4, 1, 1, 1] + schur[4, 3, 1] + schur[5, 2, 1] + schur[5, 4] + schur[6, 1, 1] + schur[6, 2, 1] + schur[6, 3] + schur[7, 1, 1] + schur[7, 2] + schur[7, 3] + schur[8, 1, 1] + schur[8, 2] + schur[9, 1] + schur[9, 2] + schur[10, 1] + schur[11, 1] + schur[13],
-(6, 4, 2, 1) : schur[2, 2, 1, 1] + schur[4, 1, 1, 1] + schur[4, 2, 1] + schur[4, 3, 1] + 2*schur[5, 2, 1] + schur[5, 3] + schur[5, 4] + schur[6, 1, 1] + schur[6, 2, 1] + schur[6, 3] + schur[7, 1, 1] + 2*schur[7, 2] + schur[7, 3] + schur[8, 1, 1] + schur[8, 2] + schur[9, 1] + schur[9, 2] + schur[10, 1] + schur[11, 1] + schur[13],
+(6, 4, 2, 1) : schur[2, 2, 1, 1] + schur[4, 1, 1, 1] + schur[4, 2, 1] + schur[4, 3, 1] + 2*schur[5, 2, 1] + schur[5, 3] + schur[5, 4] + schur[6, 1, 1] + schur[6, 2, 1] + schur[6, 3] + schur[7, 1, 1] + 2*schur[7, 2] + schur[7, 3] + schur[8, 1, 1] + schur[8, 2] + schur[9, 1] + schur[9, 2] + schur[10, 1] + schur[11, 1] + schur[13] + schur[3,2,2],
 (7, 4, 2) : schur[3, 2, 2] + schur[4, 3, 1] + schur[5, 2, 1] + schur[5, 4] + schur[6, 2, 1] + schur[6, 3] + schur[7, 2] + schur[7, 3] + schur[8, 1, 1] + schur[8, 2] + schur[9, 2] + schur[10, 1] + schur[11, 1] + schur[13],
 (8, 4, 1) : schur[4, 3, 1] + schur[5, 4] + schur[6, 2, 1] + schur[6, 3] + schur[7, 3] + schur[8, 1, 1] + schur[8, 2] + schur[9, 2] + schur[10, 1] + schur[11, 1] + schur[13],
 (9, 4) : schur[5, 4] + schur[7, 3] + schur[9, 2] + schur[11, 1] + schur[13],
@@ -489,7 +488,7 @@ SCHURS = {
 (15,) : schur[15],
 (6, 4, 3, 2, 1) : schur[2, 1, 1, 1, 1] + schur[3, 2, 1, 1] + schur[4, 1, 1, 1] + schur[4, 2, 1, 1] + schur[4, 2, 2] + schur[4, 3, 1] + schur[4, 3, 2] + schur[4, 4, 1] + schur[5, 1, 1, 1] + schur[5, 2, 1] + schur[5, 2, 1, 1] + 2*schur[5, 3, 1] + schur[5, 4] + schur[5, 4, 1] + schur[6, 1, 1, 1] + 2*schur[6, 2, 1] + schur[6, 2, 2] + 2*schur[6, 3, 1] + schur[6, 4] + schur[6, 5] + schur[7, 1, 1] + schur[7, 1, 1, 1] + 2*schur[7, 2, 1] + 2*schur[7, 3] + schur[7, 3, 1] + schur[7, 4] + schur[8, 1, 1] + schur[8, 2] + 2*schur[8, 2, 1] + 2*schur[8, 3] + schur[8, 4] + 2*schur[9, 1, 1] + schur[9, 2] + schur[9, 2, 1] + schur[9, 3] + schur[10, 1, 1] + 2*schur[10, 2] + schur[10, 3] + schur[11, 1] + schur[11, 1, 1] + schur[11, 2] + schur[12, 1] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16],
 (6, 5, 3, 2) : schur[3, 3, 1, 1] + schur[5, 2, 1, 1] + schur[5, 3, 1] + schur[5, 4, 1] + 2*schur[6, 3, 1] + schur[6, 4] + schur[6, 5] + schur[7, 1, 1, 1] + schur[7, 2, 1] + 2*schur[7, 3, 1] + schur[7, 4] + 2*schur[8, 2, 1] + 2*schur[8, 3] + schur[8, 4] + schur[9, 1, 1] + schur[9, 2, 1] + schur[9, 3] + schur[10, 1, 1] + 2*schur[10, 2] + schur[10, 3] + schur[11, 1, 1] + schur[11, 2] + schur[12, 1] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16],
-(7, 5, 3, 1) : schur[2, 2, 2, 1] + schur[4, 2, 1, 1] + schur[4, 4, 1] + schur[5, 2, 1, 1] + schur[5, 3, 1] + schur[5, 4, 1] + schur[6, 2, 1] + schur[6, 3, 1] + schur[6, 4] + schur[6, 5] + schur[7, 1, 1, 1] + 2*schur[7, 2, 1] + schur[7, 3] + schur[7, 3, 1] + schur[7, 4] + 2*schur[8, 2, 1] + schur[8, 3] + schur[8, 4] + schur[9, 1, 1] + schur[9, 2] + schur[9, 2, 1] + schur[9, 3] + schur[10, 1, 1] + 2*schur[10, 2] + schur[10, 3] + schur[11, 1, 1] + schur[11, 2] + schur[12, 1] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16],
+(7, 5, 3, 1) : schur[2, 2, 2, 1] + schur[4, 2, 1, 1] + schur[4, 4, 1] + schur[5, 2, 1, 1] + schur[5, 3, 1] + schur[5, 4, 1] + schur[6, 2, 1] + schur[6, 3, 1] + schur[6, 4] + schur[6, 5] + schur[7, 1, 1, 1] + 2*schur[7, 2, 1] + schur[7, 3] + schur[7, 3, 1] + schur[7, 4] + 2*schur[8, 2, 1] + schur[8, 3] + schur[8, 4] + schur[9, 1, 1] + schur[9, 2] + schur[9, 2, 1] + schur[9, 3] + schur[10, 1, 1] + 2*schur[10, 2] + schur[10, 3] + schur[11, 1, 1] + schur[11, 2] + schur[12, 1] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16] + schur[6,2,2] + schur[5,2,2] + schur[4,2,2],
 (8, 5, 3) : schur[4, 3, 2] + schur[5, 4, 1] + schur[6, 2, 2] + schur[6, 3, 1] + schur[6, 5] + schur[7, 3, 1] + schur[7, 4] + schur[8, 2, 1] + schur[8, 3] + schur[8, 4] + schur[9, 2, 1] + schur[9, 3] + schur[10, 2] + schur[10, 3] + schur[11, 1, 1] + schur[11, 2] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16],
 (9, 5, 2) : schur[4, 3, 2] + schur[5, 4, 1] + schur[6, 2, 2] + schur[6, 3, 1] + schur[6, 5] + schur[7, 3, 1] + schur[7, 4] + schur[8, 2, 1] + schur[8, 3] + schur[8, 4] + schur[9, 2, 1] + schur[9, 3] + schur[10, 2] + schur[10, 3] + schur[11, 1, 1] + schur[11, 2] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16],
 (10, 5, 1) : schur[5, 4, 1] + schur[6, 5] + schur[7, 3, 1] + schur[7, 4] + schur[8, 4] + schur[9, 2, 1] + schur[9, 3] + schur[10, 3] + schur[11, 1, 1] + schur[11, 2] + schur[12, 2] + schur[13, 1] + schur[14, 1] + schur[16],
